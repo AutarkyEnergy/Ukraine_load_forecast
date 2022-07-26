@@ -89,8 +89,8 @@ formula_final <- as.formula(paste("mid_load", paste(variables_final, collapse = 
 model_final <- lm(formula_final, data= mid_training,na.action="na.fail")
 save(model_final,file = "./Models/midterm_deterministic/model_final.Rdata")
 
-### Linear regressive mid-term model is done, residuals are calculated now for the LSTM and ARIMA models 
 
+### Linear regressive mid-term model is done, residuals are calculated now for the LSTM and ARIMA models 
 
 MT <- predict(model_final,MT_deterministic_data, interval = "confidence")
 
@@ -108,7 +108,7 @@ write.csv(MT_deterministic_data,"./data/midterm_det.csv", row.names = F )
 ## Note: Code for the LSTM is proprietary owned by the DLR Oldenburg, so only the output
 ## of the model can be made publicly availabe
 
-LSTM_results <- read.csv("./data/midterm_LSTM_results") 
+LSTM_results <- read.csv("./data/midterm_LSTM_results.csv") 
 MT_deterministic_data$lstm <- 0
 MT_deterministic_data$lstm[2191:2920] <- LSTM_results$prediction
 
@@ -118,18 +118,7 @@ write.csv(MT_deterministic_data, "./data/midterm_det.csv",row.names = F)
 ###### ARIMA calculation ######## 
 ## Note: this takes very long and is already calculated, results are stored
 ##       in "./Data/mid_ARIMA_results.csv"
-        
 
-# load deterministic model and residuals
-load("./Models/midterm_deterministic/model_final.Rdata")
-MT_deterministic_data <- read.csv("./data/midterm_det.csv")
-
-### save dataframe for LSTM script
-write.csv(MT_deterministic_data,"./Data/midterm_ML.csv", row.names = F)
-
-
-
-###### ARIMA calculation ######## 
 
 # load deterministic model and residuals
 load("./Models/midterm_deterministic/model_final.Rdata")
@@ -142,10 +131,11 @@ res <- model_final$residuals
 adf.test(res)
 kpss.test(res)
 # --> data is non-stationary
-# double-check with auto.arima()
 
+# double-check with auto.arima()
 starting_model <- auto.arima(res)
 checkresiduals(starting_model)
+
 # --> residuals need to be differenced once to become stationary
 d=1
 diff_res <- diff(res,1)
@@ -156,8 +146,7 @@ pacf(diff_res)
 
 test_df<- data.frame(matrix(nrow=(9*27),ncol = 5))
 colnames(test_df)<- c("AICC","sum_nine","sum_all","p","q")
-test_df<- data.frame(matrix(nrow=(9*27),ncol = 3))
-colnames(test_df)<- c("AICC","sum_nine","sum_all")
+
 
 for (k in 1:27){
   q=k
@@ -187,7 +176,7 @@ for (k in 1:27){
 # write.csv(test_df,"./Data/mid_ARIMA_results.csv",row.names = F )
 
 ## If not calculated load the results: 
-# test_df <- read.csv(./Data/mid_ARIMA_results.csv")
+test_df <- read.csv("./Data/mid_ARIMA_results.csv")
 
 test_df<- test_df[is.na(test_df$sum_all)==F,]
 p_order <- test_df$p[test_df$sum_all==min(test_df$sum_all)]
@@ -195,7 +184,7 @@ q_order <- test_df$q[test_df$sum_all==min(test_df$sum_all)]
 
 best_model_mid <- Arima(res, order = c(p_order, d, q_order))
 
-save(best_model_mid,file="./Models/midterm_stochastic/fit.mid.Rdata")
+save(best_model_mid,file="./Models/midterm_stochastic/fit.mid_noreg.Rdata")
 
 
 ### Add linear regressors to ARIMA ----
@@ -234,6 +223,8 @@ testCategorical(simulationOutput, catPred = MT_deterministic_data$nov[1:2190])
 #    maybe adding the month as external predictors can improve the forecast 
 
 # Try all external predictors and check for significance
+load("./models/midterm_stochastic/fit.mid_noreg.Rdata")
+MT_deterministic_data<-read.csv("./data/midterm_det.csv" )
 
 grid_model_reg <- Arima(res, order = c(p_order, d, q_order),xreg = as.matrix(MT_deterministic_data[1:2190,c(18:28)]))
 forecasted_arima_reg<-forecast(grid_model_reg, h=730, xreg = as.matrix(MT_deterministic_data[2191:2920,c(18:28)]) ,biasadj=TRUE,bootstrap = TRUE)
@@ -304,14 +295,13 @@ save(best_model_mid_with_reg,file = "./models/midterm_stochastic/final_ARIMA_mid
 
 ###### Save all model results ######## 
 
-midterm_model_results <- MT_deterministic_data[,c(1:4,37:40,43:44)] 
+midterm_model_results <- MT_deterministic_data[,c(1:4,37,41,42,39,38,43)]
 midterm_model_results$stoch <- c(best_model_mid_with_reg$fitted,res_forecasted_reg)
 midterm_model_results$full_model <- midterm_model_results$lm_pred+midterm_model_results$stoch
 midterm_model_results$res_full_model <- midterm_model_results$mid_load -midterm_model_results$full_model
 
 
 write.csv(midterm_model_results,"./data/midterm_model_results.csv",row.names = F)
-
 
 ###### Plot results ######## 
 library(patchwork)
