@@ -1,3 +1,4 @@
+library(forecast)
 
 ## Set working directory and check it
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
@@ -699,7 +700,7 @@ save(best_model_dec,file="./Models/shortterm_stochastic/fit.dec.Rdata")
 # load AR models and fill the training dataframe (STmodel_data) and testset dataframe (testset_shortterm)
 STmodel_data <- read.csv("./data/stmodel_data.csv")
 
-month_list <- c("jan","feb","mar","apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")
+month_list <- c("jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec")
 STmodel_data$stoch <- 0
 testset_shortterm$stoch <-0
 
@@ -710,9 +711,9 @@ for (i in 1:12){
   a=paste0("best_model_",month_list[i])
   model= get(a)
   print(a)
-  if (i < 5){
-  STmodel_data$stoch[STmodel_data$month==i & STmodel_data$year>2015]<- model$fitted}
-  else {STmodel_data$stoch[STmodel_data$month==i]<- model$fitted}
+  
+  STmodel_data$stoch[STmodel_data$month==i & STmodel_data$year>2015]<- model$fitted
+  
   
   forecasted_short_res <-forecast(model, h=24,biasadj=TRUE,bootstrap = TRUE)  
   testset_shortterm$stoch[testset_shortterm$month==i] <- as.numeric(forecasted_short_res$mean) 

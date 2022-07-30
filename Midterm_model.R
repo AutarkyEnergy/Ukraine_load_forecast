@@ -279,19 +279,21 @@ res_sum_arima_lstm/sum(abs(MT_deterministic_data$target_residuals[2191:2920]))
 
 # Check forecast visually
 MT_deterministic_data$arima_lstm <- c(best_model_mid_with_reg$fitted,(res_forecasted_reg+res_forecasted_lstm))
+ML <- read.csv("./data/predictionnew.csv")
+
 
 res_comparism <- ggplot(MT_deterministic_data[2191:2920,])+geom_line(aes(index,target_residuals,color='residuals'),lwd=1.2)+
   geom_line(aes(index, res_forecasted,color="ARIMA"),lwd=1.2)+geom_line(aes(index, res_forecasted_reg,color= "ARIMA /w reg"),lwd=1.2)+
-  geom_line(aes(index,ML$prediction,color="LSTM"),lwd=1.2)+ geom_line(aes(index,arima_lstm
-                                                                  ,color="ARIMA+LSTM"),lwd=1.2)
-
+  geom_line(aes(index,res_forecasted_lstm,color="LSTM"),lwd=1.2)+ geom_line(aes(index,ML$prediction
+                                                                  ,color="ARIMA+LSTM"),lwd=1.2)+
+  geom_line(aes(index,sin))
 res_comparism
 
 
 # Save Arima model with regressors 
 
 save(best_model_mid_with_reg,file = "./models/midterm_stochastic/final_ARIMA_mid.Rdata")
-
+load("./models/midterm_stochastic/final_ARIMA_mid.Rdata")
 
 ###### Save all model results ######## 
 
@@ -371,3 +373,23 @@ ggsave(file="./Plots/MTplot_residuals.png", plot=MTresiduals, width=12, height=8
 
 
 
+
+
+##### Delete ---------
+
+
+
+
+LTmodel_starting_data <- read.csv("./data/LTmodel_starting_data.csv")
+
+
+MT_deterministic_data[,43:60]<-0
+colnames(MT_deterministic_data)[43:60]  <-colnames(LTmodel_starting_data[2:19])
+
+colnames(MT_deterministic_data)[43] 
+for (i in 2013:2020){
+  MT_deterministic_data[MT_deterministic_data$year==i,43:60]<-LTmodel_starting_data[LTmodel_starting_data$year==i,2:19]
+}
+
+unique(MT_deterministic_data$Manuf_value)
+write.csv(MT_deterministic_data,"./data/ML_df_final23.csv",row.names = F)
